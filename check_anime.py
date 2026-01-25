@@ -2,7 +2,7 @@ import json
 import os
 import requests
 import time
-from datetime import datetime, timezone # ▼ 日時計算のために追加
+from datetime import datetime, timezone
 
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 ANNICT_TOKEN = os.environ.get("ANNICT_TOKEN")
@@ -36,7 +36,7 @@ def send_discord_embed(title, description, url, image_url):
         print(f"Error sending Discord webhook: {e}")
 
 def get_latest_episode(work_id):
-    # ▼▼▼ 修正: recordsCount(記録数) と programs(放送予定) を追加 ▼▼▼
+    # ▼▼▼ 修正: programs を完全に削除しました ▼▼▼
     query = """
     query ($annictIds: [Int!]) {
       searchWorks(annictIds: $annictIds) {
@@ -47,11 +47,6 @@ def get_latest_episode(work_id):
               number
               title
               recordsCount
-              programs {
-                nodes {
-                  startedAt
-                }
-              }
             }
           }
           image {
@@ -98,6 +93,7 @@ def get_latest_episode(work_id):
 
         episode = work["episodes"]["nodes"][0]
         
+        # ▼▼▼ 判定: 記録数(recordsCount)が0なら未放送とみなす ▼▼▼
         if episode["recordsCount"] == 0:
              print(f"  -> Episode {episode['number']} has no records (Pre-release data).")
              return 0, "未放送", ""
@@ -144,7 +140,7 @@ def main():
         if latest_episode > last_episode:
             print("  -> New episode found! Sending notification...")
             
-            embed_title = f"キョン！\n{title}の最新話が更新されたわよ！"
+            embed_title = f"キョン！{title}の最新話が更新されたわよ！"
             embed_description = f"第 {latest_episode} 話「{episode_title}」よ！"
         
             send_discord_embed(
