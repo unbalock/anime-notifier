@@ -3,8 +3,9 @@ name: Anime Notify
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * *" 
-
+    - cron: "15 * * * *" 
+  push:
+  
 permissions:
   contents: write
 
