@@ -1,0 +1,46 @@
+name: Anime Notify
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 0 * * *" # JST 18:00
+
+permissions:
+  contents: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run checker
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ANNICT_TOKEN: ${{ secrets.ANNICT_TOKEN }}
+        run: |
+          python check_anime.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "unbalock"
+          git config --global user.email "unbalock@yahoo.co.jp"
+          git add works.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update works.json [skip ci]"
+            git push
+          fi
