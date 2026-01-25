@@ -36,13 +36,13 @@ def send_discord_embed(title, description, url, image_url):
         print(f"Error sending Discord webhook: {e}")
 
 def get_latest_episode(work_id):
-    # ▼▼▼ 修正: programs を完全に削除しました ▼▼▼
+    # ▼▼▼ 修正: last: 1 を last: 5 に変更（数話分まとめて取得する） ▼▼▼
     query = """
     query ($annictIds: [Int!]) {
       searchWorks(annictIds: $annictIds) {
         nodes {
           title
-          episodes(last: 1) {
+          episodes(last: 5) {
             nodes {
               number
               title
@@ -84,25 +84,28 @@ def get_latest_episode(work_id):
             return 0, "不明", ""
 
         work = data["data"]["searchWorks"]["nodes"][0]
+        episodes_list = work["episodes"]["nodes"]
         
-        if not work["episodes"]["nodes"]:
-            img = ""
-            if work.get("image"):
-                 img = work["image"].get("facebookOgImageUrl") or work["image"].get("recommendedImageUrl") or ""
-            return 0, "エピソード未登録", img
-
-        episode = work["episodes"]["nodes"][0]
-        
-        # ▼▼▼ 判定: 記録数(recordsCount)が0なら未放送とみなす ▼▼▼
-        if episode["recordsCount"] == 0:
-             print(f"  -> Episode {episode['number']} has no records (Pre-release data).")
-             return 0, "未放送", ""
-
+        # 画像URL取得
         image_url = ""
         if work.get("image"):
             image_url = work["image"].get("facebookOgImageUrl") or work["image"].get("recommendedImageUrl") or ""
+        
+        if not episodes_list:
+            return 0, "エピソード未登録", image_url
 
-        return int(episode["number"]), episode["title"], image_url
+        # ▼▼▼ 修正: 新しい順にチェックして、放送済みのものを探す ▼▼▼
+        # Annictは古い順(昇順)で返してくることが多いので、reversedで逆順(新しい順)にする
+        for episode in reversed(episodes_list):
+            if episode["recordsCount"] > 0:
+                # 記録がある(=放送された)エピソードが見つかったらそれを返す
+                return int(episode["number"]), episode["title"], image_url
+            else:
+                # 記録がない場合はログを出して次(一つ前)の話をチェック
+                print(f"    (Skipping Ep {episode['number']}: Pre-release data)")
+
+        # 全部チェックしても放送済みがなければ0
+        return 0, "未放送", ""
 
     except Exception as e:
         print(f"Exception in get_latest_episode: {e}")
@@ -129,13 +132,12 @@ def main():
 
         latest_episode, episode_title, image_url = get_latest_episode(work_id)
         
-        # 最新話として取得した番号が 0 (未放送判定) の場合はスキップ
         if latest_episode == 0:
              print(f"  -> No aired episode found yet.")
              time.sleep(2)
              continue
 
-        print(f"  -> Latest Ep: {latest_episode}, Title: {episode_title}")
+        print(f"  -> Latest Aired Ep: {latest_episode}, Title: {episode_title}")
 
         if latest_episode > last_episode:
             print("  -> New episode found! Sending notification...")
