@@ -98,40 +98,9 @@ def get_latest_episode(work_id):
 
         episode = work["episodes"]["nodes"][0]
         
-        # ▼▼▼ 追加: 放送済みかどうかの判定ロジック ▼▼▼
-        
-        # 1. 放送予定時刻(programs)を確認する
-        programs = episode["programs"]["nodes"]
-        is_aired = False
-        has_program_data = False
-        
-        current_time = datetime.now(timezone.utc)
-
-        if programs:
-            has_program_data = True
-            for program in programs:
-                started_at_str = program["startedAt"]
-                if started_at_str:
-                    # ISOフォーマットの日時をパースして比較
-                    started_at = datetime.fromisoformat(started_at_str.replace('Z', '+00:00'))
-                    if started_at <= current_time:
-                        is_aired = True
-                        break # 1つでも放送開始時間を過ぎていればOK
-        
-        # 2. 放送データがない、または判定できない場合は「記録数」を見る
-        # (テレビ放送がない配信限定アニメなどの対策)
-        if not is_aired:
-            # 放送データがあったのに時間が未来なら「未放送」確定
-            if has_program_data:
-                print(f"  -> Episode {episode['number']} exists but hasn't aired yet.")
-                return 0, "未放送", "" # 最新話番号を返さないことで更新をスキップ
-            
-            # 放送データ自体がない場合、記録数(recordsCount)が0なら「まだ誰も見てない」=未配信とみなす
-            if episode["recordsCount"] == 0:
-                 print(f"  -> Episode {episode['number']} has no records (Pre-release data).")
-                 return 0, "未放送", ""
-
-        # ▲▲▲ 追加ここまで ▲▲▲
+        if episode["recordsCount"] == 0:
+             print(f"  -> Episode {episode['number']} has no records (Pre-release data).")
+             return 0, "未放送", ""
 
         image_url = ""
         if work.get("image"):
