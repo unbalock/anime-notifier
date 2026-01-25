@@ -3,7 +3,7 @@ name: Anime Notify
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 0 * * *" # JST 18:00
+    - cron: "15 * * * *" 
 
 permissions:
   contents: write
