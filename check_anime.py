@@ -142,7 +142,7 @@ def main():
         if latest_episode > last_episode:
             print("  -> New episode found! Sending notification...")
             
-            embed_title = f"キョン！{title}の最新話が更新されたわよ！"
+            embed_title = f"{title}の最新話が更新されたわよ！"
             embed_description = f"第 {latest_episode} 話「{episode_title}」よ！"
         
             send_discord_embed(
